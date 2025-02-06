@@ -49,7 +49,6 @@ bld/
 !**/[Pp]ackages/build/
 
 ## Local configuration
-appsettings.json
 appsettings.Development.json
 appsettings.Production.json
 
