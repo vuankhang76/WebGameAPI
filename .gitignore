@@ -48,6 +48,11 @@ bld/
 **/[Pp]ackages/*
 !**/[Pp]ackages/build/
 
+# Ignore appsettings files
+appsettings.json
+appsettings.*.json
+!appsettings.example.json
+
 ## Local configuration
 appsettings.Development.json
 appsettings.Production.json
