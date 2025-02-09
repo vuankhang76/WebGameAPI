@@ -230,16 +230,42 @@ public class GameAccountController : ControllerBase
 
     // GET: api/GameAccount/category/{categoryId}
     [HttpGet("category/{categoryId}")]
-    public async Task<ActionResult<ServiceResponse<List<GameAccount>>>> GetGameAccountsByCategory(int categoryId)
+    public async Task<ActionResult<ServiceResponse<List<GameAccountResponseDto>>>> GetGameAccountsByCategory(int categoryId)
     {
-        var response = new ServiceResponse<List<GameAccount>>();
+        var response = new ServiceResponse<List<GameAccountResponseDto>>();
         try
         {
-            response.Data = await _context.GameAccounts
+            // Kiểm tra category có tồn tại không
+            var category = await _context.Categories.FindAsync(categoryId);
+            if (category == null)
+            {
+                response.Success = false;
+                response.Message = "Category not found.";
+                return NotFound(response);
+            }
+
+            var gameAccounts = await _context.GameAccounts
                 .Include(g => g.Category)
                 .Include(g => g.GameAccountImages)
                 .Where(g => g.CategoryId == categoryId)
                 .ToListAsync();
+
+            response.Data = gameAccounts.Select(g => new GameAccountResponseDto
+            {
+                Id = g.Id,
+                CategoryId = g.CategoryId,
+                CategoryName = g.Category.Name,
+                Title = g.Title,
+                Description = g.Description,
+                GameType = g.GameType,
+                Price = g.Price,
+                Status = g.Status,
+                CreatedAt = g.CreatedAt,
+                UpdatedAt = g.UpdatedAt,
+                ImageUrls = g.GameAccountImages.Select(i => i.ImageUrl).ToList()
+            }).ToList();
+
+            response.Message = $"Found {response.Data.Count} game accounts in category '{category.Name}'";
         }
         catch (Exception ex)
         {

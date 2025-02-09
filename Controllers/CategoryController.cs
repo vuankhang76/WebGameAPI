@@ -1,4 +1,5 @@
 ﻿using GameAccountStore.Data;
+using GameAccountStore.DTOs;
 using GameAccountStore.Helpers;
 using GameAccountStore.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -33,11 +34,11 @@ public class CategoryController : ControllerBase
         return response;
     }
 
-    // GET: api/Category/5
+    // GET: api/Category/{id}
     [HttpGet("{id}")]
-    public async Task<ActionResult<ServiceResponse<Category>>> GetCategory(int id)
+    public async Task<ActionResult<ServiceResponse<CategoryDto>>> GetCategory(int id)
     {
-        var response = new ServiceResponse<Category>();
+        var response = new ServiceResponse<CategoryDto>();
         try
         {
             var category = await _context.Categories.FindAsync(id);
@@ -47,7 +48,15 @@ public class CategoryController : ControllerBase
                 response.Message = "Category not found.";
                 return NotFound(response);
             }
-            response.Data = category;
+
+            response.Data = new CategoryDto
+            {
+                Id = category.Id,
+                Name = category.Name,
+                Description = category.Description,
+                CreatedAt = category.CreatedAt,
+                UpdatedAt = category.UpdatedAt
+            };
         }
         catch (Exception ex)
         {
@@ -60,15 +69,29 @@ public class CategoryController : ControllerBase
     // POST: api/Category
     [Authorize(Roles = "Admin")]
     [HttpPost]
-    public async Task<ActionResult<ServiceResponse<Category>>> CreateCategory(Category category)
+    public async Task<ActionResult<ServiceResponse<CategoryDto>>> CreateCategory(CreateCategoryDto request)
     {
-        var response = new ServiceResponse<Category>();
+        var response = new ServiceResponse<CategoryDto>();
         try
         {
-            category.CreatedAt = DateTime.Now;
+            var category = new Category
+            {
+                Name = request.Name,
+                Description = request.Description,
+                CreatedAt = DateTime.Now
+            };
+
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
-            response.Data = category;
+
+            response.Data = new CategoryDto
+            {
+                Id = category.Id,
+                Name = category.Name,
+                Description = category.Description,
+                CreatedAt = category.CreatedAt,
+                UpdatedAt = category.UpdatedAt
+            };
             response.Message = "Category created successfully.";
         }
         catch (Exception ex)
@@ -79,36 +102,42 @@ public class CategoryController : ControllerBase
         return response;
     }
 
-    // PUT: api/Category/5
+    // PUT: api/Category/{id}
     [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
-    public async Task<ActionResult<ServiceResponse<Category>>> UpdateCategory(int id, Category category)
+    public async Task<ActionResult<ServiceResponse<CategoryDto>>> UpdateCategory(int id, CreateCategoryDto request)
     {
-        var response = new ServiceResponse<Category>();
+        var response = new ServiceResponse<CategoryDto>();
         try
         {
-            if (id != category.Id)
-            {
-                response.Success = false;
-                response.Message = "Invalid Id.";
-                return BadRequest(response);
-            }
-
-            category.UpdatedAt = DateTime.Now;
-            _context.Entry(category).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            response.Data = category;
-            response.Message = "Category updated successfully.";
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!CategoryExists(id))
+            var category = await _context.Categories.FindAsync(id);
+            if (category == null)
             {
                 response.Success = false;
                 response.Message = "Category not found.";
                 return NotFound(response);
             }
-            throw;
+
+            category.Name = request.Name;
+            category.Description = request.Description;
+            category.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            response.Data = new CategoryDto
+            {
+                Id = category.Id,
+                Name = category.Name,
+                Description = category.Description,
+                CreatedAt = category.CreatedAt,
+                UpdatedAt = category.UpdatedAt
+            };
+            response.Message = "Category updated successfully.";
+        }
+        catch (Exception ex)
+        {
+            response.Success = false;
+            response.Message = ex.Message;
         }
         return response;
     }

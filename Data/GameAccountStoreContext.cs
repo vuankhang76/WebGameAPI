@@ -177,6 +177,8 @@ public partial class GameAccountStoreContext : DbContext
 
             entity.HasIndex(e => e.Username, "IX_Users_Username");
 
+            entity.Property(e => e.FullName).HasMaxLength(100);
+
             entity.HasIndex(e => e.Username, "UQ__Users__536C85E4A3745F1F").IsUnique();
 
             entity.HasIndex(e => e.Email, "UQ__Users__A9D105342FE11652").IsUnique();

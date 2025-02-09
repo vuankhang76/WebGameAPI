@@ -1,4 +1,5 @@
 ﻿using GameAccountStore.Data;
+using GameAccountStore.DTOs;
 using GameAccountStore.Helpers;
 using GameAccountStore.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -44,15 +45,15 @@ public class UserController : ControllerBase
         return response;
     }
 
-    // PUT: api/User/balance/add
-    [HttpPut("balance/add")]
-    public async Task<ActionResult<ServiceResponse<decimal>>> AddBalance([FromBody] decimal amount)
+    // POST: api/User/add-balance (Admin only)
+    [Authorize(Roles = "Admin")]
+    [HttpPost("add-balance")]
+    public async Task<ActionResult<ServiceResponse<User>>> AddBalanceToUser([FromBody] AddBalanceDto request)
     {
-        var response = new ServiceResponse<decimal>();
+        var response = new ServiceResponse<User>();
         try
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _context.Users.FindAsync(request.UserId);
             if (user == null)
             {
                 response.Success = false;
@@ -60,11 +61,11 @@ public class UserController : ControllerBase
                 return NotFound(response);
             }
 
-            user.Balance += amount;
+            user.Balance += request.Amount;
             await _context.SaveChangesAsync();
 
-            response.Data = user.Balance;
-            response.Message = $"Added {amount:C} to balance successfully.";
+            response.Data = user;
+            response.Message = $"Successfully added {request.Amount:C} to user's balance.";
         }
         catch (Exception ex)
         {

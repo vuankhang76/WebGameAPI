@@ -1,4 +1,5 @@
 ﻿using GameAccountStore.Data;
+using GameAccountStore.DTOs;
 using GameAccountStore.Helpers;
 using GameAccountStore.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -21,17 +22,32 @@ public class TransactionController : ControllerBase
 
     // GET: api/Transaction
     [HttpGet]
-    public async Task<ActionResult<ServiceResponse<List<Transaction>>>> GetMyTransactions()
+    public async Task<ActionResult<ServiceResponse<List<TransactionResponseDto>>>> GetMyTransactions()
     {
-        var response = new ServiceResponse<List<Transaction>>();
+        var response = new ServiceResponse<List<TransactionResponseDto>>();
         try
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-            response.Data = await _context.Transactions
+            var transactions = await _context.Transactions
                 .Include(t => t.GameAccount)
+                .Include(t => t.User)
                 .Where(t => t.UserId == userId)
                 .OrderByDescending(t => t.CreatedAt)
+                .Select(t => new TransactionResponseDto
+                {
+                    Id = t.Id,
+                    UserId = t.UserId,
+                    Username = t.User.Username,
+                    GameAccountId = t.GameAccountId,
+                    GameTitle = t.GameAccount.Title,
+                    Amount = t.Amount,
+                    Status = t.Status,
+                    CreatedAt = t.CreatedAt
+                })
                 .ToListAsync();
+
+            response.Data = transactions;
+            response.Message = $"Found {transactions.Count} transactions.";
         }
         catch (Exception ex)
         {
@@ -118,16 +134,30 @@ public class TransactionController : ControllerBase
     // GET: api/Transaction/all (Admin only)
     [Authorize(Roles = "Admin")]
     [HttpGet("all")]
-    public async Task<ActionResult<ServiceResponse<List<Transaction>>>> GetAllTransactions()
+    public async Task<ActionResult<ServiceResponse<List<TransactionResponseDto>>>> GetAllTransactions()
     {
-        var response = new ServiceResponse<List<Transaction>>();
+        var response = new ServiceResponse<List<TransactionResponseDto>>();
         try
         {
-            response.Data = await _context.Transactions
+            var transactions = await _context.Transactions
                 .Include(t => t.User)
                 .Include(t => t.GameAccount)
                 .OrderByDescending(t => t.CreatedAt)
+                .Select(t => new TransactionResponseDto
+                {
+                    Id = t.Id,
+                    UserId = t.UserId,
+                    Username = t.User.Username,
+                    GameAccountId = t.GameAccountId,
+                    GameTitle = t.GameAccount.Title,
+                    Amount = t.Amount,
+                    Status = t.Status,
+                    CreatedAt = t.CreatedAt
+                })
                 .ToListAsync();
+
+            response.Data = transactions;
+            response.Message = $"Found {transactions.Count} transactions.";
         }
         catch (Exception ex)
         {

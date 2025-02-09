@@ -21,9 +21,9 @@ public class CartController : ControllerBase
 
     // GET: api/Cart
     [HttpGet]
-    public async Task<ActionResult<ServiceResponse<Cart>>> GetCart()
+    public async Task<ActionResult<ServiceResponse<CartResponseDto>>> GetCart()
     {
-        var response = new ServiceResponse<Cart>();
+        var response = new ServiceResponse<CartResponseDto>();
         try
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
@@ -39,7 +39,22 @@ public class CartController : ControllerBase
                 await _context.SaveChangesAsync();
             }
 
-            response.Data = cart;
+            response.Data = new CartResponseDto
+            {
+                Id = cart.Id,
+                UserId = cart.UserId,
+                CartItems = cart.CartItems.Select(ci => new CartItemDto
+                {
+                    Id = ci.Id,
+                    CartId = ci.CartId,
+                    GameAccountId = ci.GameAccountId,
+                    GameTitle = ci.GameAccount.Title,
+                    GameType = ci.GameAccount.GameType,
+                    Price = ci.GameAccount.Price,
+                    CreatedAt = ci.CreatedAt
+                }).ToList(),
+                Total = cart.CartItems.Sum(ci => ci.GameAccount.Price)
+            };
         }
         catch (Exception ex)
         {
@@ -51,14 +66,15 @@ public class CartController : ControllerBase
 
     // POST: api/Cart/items
     [HttpPost("items")]
-    public async Task<ActionResult<ServiceResponse<CartItem>>> AddToCart(AddToCartDto request)
+    public async Task<ActionResult<ServiceResponse<CartResponseDto>>> AddToCart(AddToCartDto request)
     {
-        var response = new ServiceResponse<CartItem>();
+        var response = new ServiceResponse<CartResponseDto>();
         try
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
             var cart = await _context.Carts
                 .Include(c => c.CartItems)
+                .ThenInclude(ci => ci.GameAccount)
                 .FirstOrDefaultAsync(c => c.UserId == userId);
 
             if (cart == null)
@@ -103,7 +119,29 @@ public class CartController : ControllerBase
             _context.CartItems.Add(cartItem);
             await _context.SaveChangesAsync();
 
-            response.Data = cartItem;
+            // Refresh cart data
+            await _context.Entry(cart)
+                .Collection(c => c.CartItems)
+                .Query()
+                .Include(ci => ci.GameAccount)
+                .LoadAsync();
+
+            response.Data = new CartResponseDto
+            {
+                Id = cart.Id,
+                UserId = cart.UserId,
+                CartItems = cart.CartItems.Select(ci => new CartItemDto
+                {
+                    Id = ci.Id,
+                    CartId = ci.CartId,
+                    GameAccountId = ci.GameAccountId,
+                    GameTitle = ci.GameAccount.Title,
+                    GameType = ci.GameAccount.GameType,
+                    Price = ci.GameAccount.Price,
+                    CreatedAt = ci.CreatedAt
+                }).ToList(),
+                Total = cart.CartItems.Sum(ci => ci.GameAccount.Price)
+            };
             response.Message = "Item added to cart successfully.";
         }
         catch (Exception ex)
@@ -116,15 +154,18 @@ public class CartController : ControllerBase
 
     // DELETE: api/Cart/items/5
     [HttpDelete("items/{id}")]
-    public async Task<ActionResult<ServiceResponse<bool>>> RemoveFromCart(int id)
+    public async Task<ActionResult<ServiceResponse<CartResponseDto>>> RemoveFromCart(int id)
     {
-        var response = new ServiceResponse<bool>();
+        var response = new ServiceResponse<CartResponseDto>();
         try
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
-            var cartItem = await _context.CartItems
-                .Include(ci => ci.Cart)
-                .FirstOrDefaultAsync(ci => ci.Id == id && ci.Cart.UserId == userId);
+            var cart = await _context.Carts
+                .Include(c => c.CartItems)
+                .ThenInclude(ci => ci.GameAccount)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
+
+            var cartItem = cart?.CartItems.FirstOrDefault(ci => ci.Id == id);
 
             if (cartItem == null)
             {
@@ -136,7 +177,29 @@ public class CartController : ControllerBase
             _context.CartItems.Remove(cartItem);
             await _context.SaveChangesAsync();
 
-            response.Data = true;
+            // Refresh cart data
+            await _context.Entry(cart)
+                .Collection(c => c.CartItems)
+                .Query()
+                .Include(ci => ci.GameAccount)
+                .LoadAsync();
+
+            response.Data = new CartResponseDto
+            {
+                Id = cart.Id,
+                UserId = cart.UserId,
+                CartItems = cart.CartItems.Select(ci => new CartItemDto
+                {
+                    Id = ci.Id,
+                    CartId = ci.CartId,
+                    GameAccountId = ci.GameAccountId,
+                    GameTitle = ci.GameAccount.Title,
+                    GameType = ci.GameAccount.GameType,
+                    Price = ci.GameAccount.Price,
+                    CreatedAt = ci.CreatedAt
+                }).ToList(),
+                Total = cart.CartItems.Sum(ci => ci.GameAccount.Price)
+            };
             response.Message = "Item removed from cart successfully.";
         }
         catch (Exception ex)
@@ -149,9 +212,9 @@ public class CartController : ControllerBase
 
     // DELETE: api/Cart/clear
     [HttpDelete("clear")]
-    public async Task<ActionResult<ServiceResponse<bool>>> ClearCart()
+    public async Task<ActionResult<ServiceResponse<CartResponseDto>>> ClearCart()
     {
-        var response = new ServiceResponse<bool>();
+        var response = new ServiceResponse<CartResponseDto>();
         try
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
@@ -159,13 +222,19 @@ public class CartController : ControllerBase
                 .Include(c => c.CartItems)
                 .FirstOrDefaultAsync(c => c.UserId == userId);
 
-            if (cart != null)
+            if (cart != null && cart.CartItems.Any())
             {
                 _context.CartItems.RemoveRange(cart.CartItems);
                 await _context.SaveChangesAsync();
             }
 
-            response.Data = true;
+            response.Data = new CartResponseDto
+            {
+                Id = cart?.Id ?? 0,
+                UserId = userId,
+                CartItems = new List<CartItemDto>(),
+                Total = 0
+            };
             response.Message = "Cart cleared successfully.";
         }
         catch (Exception ex)
@@ -176,6 +245,7 @@ public class CartController : ControllerBase
         return response;
     }
 
+    // DELETE: api/Cart/{id}
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<ActionResult<ServiceResponse<bool>>> DeleteCart(int id)
