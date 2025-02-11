@@ -125,6 +125,13 @@ public partial class GameAccountStoreContext : DbContext
                 .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__GameAccou__Categ__4316F928");
+
+            entity.Property(e => e.Rank)
+        .HasMaxLength(50);
+
+            entity.Property(e => e.NumberOfSkins);
+
+            entity.Property(e => e.NumberOfChamps);
         });
 
         modelBuilder.Entity<GameAccountImage>(entity =>

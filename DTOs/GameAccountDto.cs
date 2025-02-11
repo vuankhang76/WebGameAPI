@@ -18,6 +18,9 @@ namespace GameAccountStore.DTOs
         [Required]
         [Range(0, double.MaxValue)]
         public decimal Price { get; set; }
+        public string? Rank { get; set; }
+        public int NumberOfSkins { get; set; }
+        public int NumberOfChamps { get; set; }
 
         public List<string> ImageUrls { get; set; } = new List<string>();
     }
@@ -34,6 +37,9 @@ namespace GameAccountStore.DTOs
         public string Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public string Rank { get; set; }
+        public int NumberOfSkins { get; set; }
+        public int NumberOfChamps { get; set; }
         public List<string> ImageUrls { get; set; } = new List<string>();
     }
 }

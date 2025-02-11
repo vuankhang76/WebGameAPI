@@ -41,15 +41,22 @@ public class GameAccountController : ControllerBase
                 Status = g.Status,
                 CreatedAt = g.CreatedAt,
                 UpdatedAt = g.UpdatedAt,
+                Rank = g.Rank,
+                NumberOfSkins = g.NumberOfSkins ?? 0,
+                NumberOfChamps = g.NumberOfChamps ?? 0,
                 ImageUrls = g.GameAccountImages.Select(i => i.ImageUrl).ToList()
             }).ToList();
+
+            response.Success = true; // Thêm dòng này
+            response.Message = "Game accounts retrieved successfully"; // Thêm dòng này
+            return Ok(response); // Thay đổi return statement
         }
         catch (Exception ex)
         {
             response.Success = false;
             response.Message = ex.Message;
+            return StatusCode(500, response); // Thay đổi return statement
         }
-        return response;
     }
 
     // GET: api/GameAccount/5
@@ -83,6 +90,9 @@ public class GameAccountController : ControllerBase
                 Status = gameAccount.Status,
                 CreatedAt = gameAccount.CreatedAt,
                 UpdatedAt = gameAccount.UpdatedAt,
+                Rank = gameAccount.Rank,
+                NumberOfSkins = gameAccount.NumberOfSkins ?? 0,
+                NumberOfChamps = gameAccount.NumberOfChamps ?? 0,
                 ImageUrls = gameAccount.GameAccountImages.Select(i => i.ImageUrl).ToList()
             };
         }
@@ -118,7 +128,10 @@ public class GameAccountController : ControllerBase
                 GameType = request.GameType,
                 Price = request.Price,
                 Status = "Available",
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                Rank = request.Rank,
+                NumberOfSkins = request.NumberOfSkins,
+                NumberOfChamps = request.NumberOfChamps
             };
 
             _context.GameAccounts.Add(gameAccount);
@@ -262,6 +275,9 @@ public class GameAccountController : ControllerBase
                 Status = g.Status,
                 CreatedAt = g.CreatedAt,
                 UpdatedAt = g.UpdatedAt,
+                Rank = g.Rank,
+                NumberOfSkins = g.NumberOfSkins ?? 0,
+                NumberOfChamps = g.NumberOfChamps ?? 0,
                 ImageUrls = g.GameAccountImages.Select(i => i.ImageUrl).ToList()
             }).ToList();
 

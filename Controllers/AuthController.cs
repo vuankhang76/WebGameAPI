@@ -24,7 +24,8 @@ public class AuthController : ControllerBase
         {
             Username = request.Username,
             Email = request.Email,
-            Role = "User"
+            Role = "User",
+            FullName = request.FullName
         };
 
         var response = await _authService.Register(user, request.Password);

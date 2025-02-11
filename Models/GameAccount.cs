@@ -22,6 +22,9 @@ public partial class GameAccount
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+    public string? Rank { get; set; }
+    public int? NumberOfSkins { get; set; }
+    public int? NumberOfChamps { get; set; }
 
     public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
 

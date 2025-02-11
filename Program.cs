@@ -14,6 +14,18 @@ namespace GameAccountStore
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll",
+                    builder =>
+                    {
+                        builder
+                            .AllowAnyOrigin()
+                            .AllowAnyMethod()
+                            .AllowAnyHeader();
+                    });
+            });
+
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -69,6 +81,7 @@ namespace GameAccountStore
 
             builder.Services.AddAuthorization();
             builder.Services.AddScoped<IAuthService, AuthService>();
+                
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -79,7 +92,7 @@ namespace GameAccountStore
             }
 
             app.UseHttpsRedirection();
-
+            app.UseCors("AllowAll");
             app.UseAuthentication();
             app.UseAuthorization();
 
